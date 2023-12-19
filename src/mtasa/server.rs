@@ -2,6 +2,8 @@ use std::{fs, process::{Command, Stdio}};
 use std::io::{self, BufRead, Write};
 use colored::Colorize;
 
+use crate::utils::text;
+
 pub fn start() {
     match get_mta() {
         Ok(result) => {
@@ -30,7 +32,7 @@ fn start_mta(path: String) {
 
     let stdin = io::stdin();
     let mut reader = stdin.lock();
-    let mut server_stdin = match server_process.stdin.take() {
+    let server_stdin = match server_process.stdin.take() {
         Some(stdin) => stdin,
         None => {
             eprintln!("Não foi possível acessar a entrada padrão do processo.");
@@ -39,19 +41,19 @@ fn start_mta(path: String) {
     };
 
     let mut input = String::new();
+
+    let mut process = text::Process::new(server_stdin);
     loop {
         io::stdout().flush().expect("Falha ao limpar o buffer de saída.");
-
         input.clear();
+
         if let Err(err) = reader.read_line(&mut input) {
             eprintln!("Erro ao ler a entrada: {}", err);
             break;
         }
 
-        if let Err(err) = server_stdin.write_all(input.as_bytes()) {
-            eprintln!("Erro ao escrever no processo: {}", err);
-            break;
-        }
+        process.process_text(&input);
+        
     }
 }
 
